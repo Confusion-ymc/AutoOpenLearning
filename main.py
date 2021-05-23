@@ -31,7 +31,13 @@ class LearnBot:
     def run(self):
         while True:
             try:
-                input('Press Enter To Run...')
+                choice = input('选择你要的操作，(默认)1.开始刷课，2.退出程序\n1):Run... \n2):Quit\n')
+                if not choice or choice == '1':
+                    pass
+                elif choice == '2':
+                    break
+                else:
+                    continue
                 handles = self.driver.window_handles
                 self.driver.switch_to.window(handles[-1])
                 self.driver.switch_to.default_content()
@@ -97,8 +103,16 @@ class LearnBot:
         self.driver.switch_to.frame(self.driver.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
         self.driver.switch_to.frame(self.driver.find_element_by_xpath('//*[@id="w_code"]'))
 
+    def stop(self):
+        try:
+            self.driver.quit()
+        except:
+            pass
+        print('正常退出')
+
 
 if __name__ == '__main__':
     learn_bot = LearnBot()
     learn_bot.qr_login()
     learn_bot.run()
+    learn_bot.stop()
