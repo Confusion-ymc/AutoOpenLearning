@@ -1,8 +1,8 @@
 # Auto OpenLearning
 ## 电子科大自动看视频
 
-###使用方式:
-###准备：
+### 使用方式:
+### 准备：
 
 1.安装Python3
 
@@ -20,7 +20,7 @@
 
 如图:
 
-
+<img src="https://github.com/Confusion-ymc/AutoOpenLearning/raw/master/docs/%E5%87%86%E5%A4%87%E5%AE%8C%E6%88%90.png" />
 
 
 ### 开始：
@@ -29,7 +29,7 @@
 
 ### 重复：
 在8步全部完成课程后，可关闭课程页面，重复6，7，8 步骤开启另外一个课程的学习。
-###注意：
+### 注意：
 
 1.默认使用的Edge浏览器, drivers文件夹中的驱动可能与你的浏览器不匹配请升级你的浏览器到最新并前往https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
 下载Stable Channel版本驱动
