@@ -1,13 +1,25 @@
 import datetime
+import os
 import time
 import traceback
 
 from selenium import webdriver
+from tools import install_browser, install_webdriver, webdriver_executable, chromium_executable
+
+install_browser()
+install_webdriver()
+os.popen(str(chromium_executable()) + ' --remote-debugging-port=9222')
 
 
 class LearnBot:
     def __init__(self):
-        self.driver = webdriver.Edge(executable_path='drivers/msedgedriver.exe')
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('log-level=3')
+        # chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        # options.binary_location = str(chromium_executable())
+        chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        self.driver = webdriver.Chrome(executable_path=str(webdriver_executable()), options=chrome_options)
+
         self.count = 0
         self.driver.get('https://student.uestcedu.com/console/')
 
@@ -70,12 +82,14 @@ class LearnBot:
             try:
                 i.click()
             except Exception as e:
-                traceback.print_exc()
+                # traceback.print_exc()
+                pass
         for i in self.driver.find_elements_by_css_selector("img[src='/_web_api/images/treeicon/cornerplusnode.gif']"):
             try:
                 i.click()
             except Exception as e:
-                traceback.print_exc()
+                # traceback.print_exc()
+                pass
 
     def find_not_finish(self):
         """
