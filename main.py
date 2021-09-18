@@ -21,23 +21,41 @@ class LearnBot:
 
         self.count = 0
         self.driver.get('https://student.uestcedu.com/console/')
+    
+    def find_element_by_xpath(self, xpath):
+        for i in range(60):
+            try:
+                return self.driver.find_element_by_xpath(xpath)
+            except:
+                time.sleep(1)
+        else:
+            raise Exception(f'没有找到元素 {xpath}')
+
+    def find_elements_by_css_selector(self, css_selector):
+        for i in range(60):
+            try:
+                return self.driver.find_elements_by_css_selector(css_selector)
+            except:
+                time.sleep(1)
+        else:
+            raise Exception(f'没有找到元素 {css_selector}')
 
     def login(self, username, password):
         while True:
             self.driver.get('https://student.uestcedu.com/console/')
-            self.driver.find_element_by_xpath('//*[@id="txtLoginName"]').send_keys(username)
-            self.driver.find_element_by_xpath('//*[@id="txtPassword"]').send_keys(password)
-            self.driver.find_element_by_xpath('//*[@id="verify_button"]').click()
+            self.find_element_by_xpath('//*[@id="txtLoginName"]').send_keys(username)
+            self.find_element_by_xpath('//*[@id="txtPassword"]').send_keys(password)
+            self.find_element_by_xpath('//*[@id="verify_button"]').click()
             self.driver.switch_to.alert.accept()
             msm_code = input('验证码:')
-            self.driver.find_element_by_xpath('//*[@id="txtSmsCode"]').send_keys(msm_code)
-            self.driver.find_element_by_xpath('//*[@id="login_button"]').click()
+            self.find_element_by_xpath('//*[@id="txtSmsCode"]').send_keys(msm_code)
+            self.find_element_by_xpath('//*[@id="login_button"]').click()
             time.sleep(5)
             if 'https://student.uestcedu.com/console/main.html?' in self.driver.current_url:
                 break
 
     def qr_login(self):
-        self.driver.find_element_by_xpath('/html/body/div/div/div/div/div/ul/li[2]').click()
+        self.find_element_by_xpath('/html/body/div/div/div/div/div/ul/li[2]').click()
 
     def run(self):
         while True:
@@ -52,8 +70,8 @@ class LearnBot:
                 handles = self.driver.window_handles
                 self.driver.switch_to.window(handles[-1])
                 self.driver.switch_to.default_content()
-                self.driver.switch_to.frame(self.driver.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
-                self.driver.switch_to.frame(self.driver.find_element_by_xpath('//*[@id="w_code"]'))
+                self.driver.switch_to.frame(self.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
+                self.driver.switch_to.frame(self.find_element_by_xpath('//*[@id="w_code"]'))
                 self.expand_all()
                 time.sleep(2)
                 node_list = self.find_not_finish()
@@ -77,13 +95,13 @@ class LearnBot:
         展开所有加号
         :return:
         """
-        for i in self.driver.find_elements_by_css_selector("img[src='/_web_api/images/treeicon/plusnode.gif']"):
+        for i in self.find_elements_by_css_selector("img[src='/_web_api/images/treeicon/plusnode.gif']"):
             try:
                 i.click()
             except Exception as e:
                 # traceback.print_exc()
                 pass
-        for i in self.driver.find_elements_by_css_selector("img[src='/_web_api/images/treeicon/cornerplusnode.gif']"):
+        for i in self.find_elements_by_css_selector("img[src='/_web_api/images/treeicon/cornerplusnode.gif']"):
             try:
                 i.click()
             except Exception as e:
@@ -96,15 +114,15 @@ class LearnBot:
         :return:
         """
         # 未开始
-        not_attempt_list = self.driver.find_elements_by_css_selector("span.scorm.notattempt")
+        not_attempt_list = self.find_elements_by_css_selector("span.scorm.notattempt")
         # 未完成
-        incomplete = self.driver.find_elements_by_css_selector("span.scorm.incomplete")
+        incomplete = self.find_elements_by_css_selector("span.scorm.incomplete")
         return [i.find_element_by_xpath('../a') for i in (incomplete + not_attempt_list)]
 
     def wait_finish(self):
         self.driver.switch_to.default_content()
-        self.driver.switch_to.frame(self.driver.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
-        self.driver.switch_to.frame(self.driver.find_element_by_xpath('//*[@id="w_lms_content"]'))
+        self.driver.switch_to.frame(self.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
+        self.driver.switch_to.frame(self.find_element_by_xpath('//*[@id="w_lms_content"]'))
         wait_count = 0
         while wait_count <= 60 * 60:
             if '您正在学习' in self.driver.find_elements_by_xpath('//td')[-1].text:
@@ -113,8 +131,8 @@ class LearnBot:
             else:
                 break
         self.driver.switch_to.default_content()
-        self.driver.switch_to.frame(self.driver.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
-        self.driver.switch_to.frame(self.driver.find_element_by_xpath('//*[@id="w_code"]'))
+        self.driver.switch_to.frame(self.find_element_by_xpath('/html/body/table/tbody/tr[2]/td/iframe'))
+        self.driver.switch_to.frame(self.find_element_by_xpath('//*[@id="w_code"]'))
 
     def stop(self):
         try:
