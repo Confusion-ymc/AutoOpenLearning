@@ -1,5 +1,4 @@
 import logging
-import stat
 import sys
 from io import BytesIO
 from pathlib import Path
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 DOWNLOADS_FOLDER = Path.cwd() / 'drivers'
 REVISION = '588429'
 BASE_URL = 'https://storage.googleapis.com/chromium-browser-snapshots'
-windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
+windowsArchive = 'chrome-win32'
 
 
 def download_zip(url: str) -> BytesIO:
@@ -69,7 +68,7 @@ def extract_zip(data: BytesIO, path: Path) -> None:
         import subprocess
         import shutil
 
-        zip_path = path / 'chrome.zip'
+        zip_path = path / 'temp.zip'
         if not path.exists():
             path.mkdir(parents=True)
         with zip_path.open('wb') as f:
@@ -82,31 +81,26 @@ def extract_zip(data: BytesIO, path: Path) -> None:
         if proc.returncode != 0:
             logger.error(proc.stdout.decode())
             raise OSError(f'Failed to unzip {zip_path}.')
-        if chromium_executable().exists() and zip_path.exists():
-            zip_path.unlink()
+        else:
+            if zip_path.exists():
+                zip_path.unlink()
     else:
         with ZipFile(data) as zf:
             zf.extractall(str(path))
-    exec_path = chromium_executable()
-    if not exec_path.exists():
-        raise IOError('Failed to extract chromium.')
-    exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP | stat.S_IXUSR)
-    logger.warning(f'chromium extracted to: {path}')
+    logger.warning(f'extracted to: {path}')
 
 
 def get_chromium_url():
     url_map = {
-        'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
-        'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
         'win32': f'{BASE_URL}/Win/{REVISION}/{windowsArchive}.zip',
         'win64': f'{BASE_URL}/Win_x64/{REVISION}/{windowsArchive}.zip',
+        'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip'
     }
     return url_map[current_platform()]
 
 
 def get_webdriver_url():
     url_map = {
-        'linux': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_linux64.zip',
         'win32': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_win32.zip',
         'win64': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_win32.zip',
         'mac': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_mac64.zip'
@@ -116,10 +110,9 @@ def get_webdriver_url():
 
 def chromium_executable() -> Path:
     chromium_executable_map = {
-        'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chrome',
-        'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'),
         'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
         'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
+        'mac': DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'
     }
     """Get path of the chromium executable."""
     return chromium_executable_map[current_platform()]
@@ -127,7 +120,6 @@ def chromium_executable() -> Path:
 
 def webdriver_executable() -> Path:
     webdriver_executable_map = {
-        'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chromedriver',
         'mac': DOWNLOADS_FOLDER / REVISION / 'chromedriver',
         'win32': DOWNLOADS_FOLDER / REVISION / 'chromedriver.exe',
         'win64': DOWNLOADS_FOLDER / REVISION / 'chromedriver.exe',
