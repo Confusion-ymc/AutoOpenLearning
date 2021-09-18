@@ -128,9 +128,9 @@ def chromium_executable() -> Path:
 def webdriver_executable() -> Path:
     webdriver_executable_map = {
         'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chromedriver',
-        'mac': (DOWNLOADS_FOLDER / REVISION / 'chromedriver'),
-        'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chromedriver.exe',
-        'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chromedriver.exe',
+        'mac': DOWNLOADS_FOLDER / REVISION / 'chromedriver',
+        'win32': DOWNLOADS_FOLDER / REVISION / 'chromedriver.exe',
+        'win64': DOWNLOADS_FOLDER / REVISION / 'chromedriver.exe',
     }
     """Get path of the chromium executable."""
     return webdriver_executable_map[current_platform()]

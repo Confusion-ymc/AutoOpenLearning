@@ -15,6 +15,7 @@ class LearnBot:
     def __init__(self):
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument('log-level=3')
+        chrome_options.add_argument("--disable-popup-blocking")
         # chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
         # options.binary_location = str(chromium_executable())
         chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
