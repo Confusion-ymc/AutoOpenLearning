@@ -1,15 +1,13 @@
 import json
-import os
-import pickle
 import time
 from pathlib import Path
 
 from selenium import webdriver
-from tools import install_browser, install_webdriver, webdriver_executable, chromium_executable, download_stealth_js
+from tools import install_webdriver, webdriver_executable, download_stealth_js
 
-install_browser()
-install_webdriver()
-exit()
+chrome_version = '95.0.4638.69'
+
+install_webdriver(chrome_version)
 download_stealth_js()
 
 
@@ -27,13 +25,17 @@ class LearnBot2:
     def __init__(self, username=None, password=None):
         self.username = username
         self.password = password
+        self.watch_list = {}
+        self.cookie_path = Path().cwd() / 'cookie.json'
+
         # os.popen(str(chromium_executable()) + ' --remote-debugging-port=9222')
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument('log-level=3')
         chrome_options.add_argument("--disable-popup-blocking")
         # chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
         # chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-        self.driver = webdriver.Chrome(executable_path=str(webdriver_executable()), options=chrome_options)
+        self.driver = webdriver.Chrome(executable_path=str(webdriver_executable(chrome_version)),
+                                       options=chrome_options)
         with open('stealth.min.js') as f:
             js = f.read()
         self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
@@ -41,8 +43,8 @@ class LearnBot2:
         })
         self.count = 0
 
-    def find_element_by_xpath(self, xpath):
-        for i in range(60):
+    def find_element_by_xpath(self, xpath, wait_time=60):
+        for i in range(wait_time):
             try:
                 return self.driver.find_element_by_xpath(xpath)
             except:
@@ -60,16 +62,14 @@ class LearnBot2:
             raise Exception(f'没有找到元素 {css_selector}')
 
     def save_cookie(self):
-        # data = self.driver.get_cookies()
-        # with open('cookie.json', 'w') as f:
-        #     json.dump(data, f)
-        pickle.dump(self.driver.get_cookies(), open("cookie.pk1", 'wb'))
+        with open(self.cookie_path, 'w', encoding='utf-8') as f:
+            f.write(json.dumps(self.driver.get_cookies()))
 
     def load_cookie(self):
-        if not (Path().cwd() / 'cookie.json').is_file():
+        if not self.cookie_path.is_file():
             return
-        with open('cookie.json', 'r') as f:
-            data = json.load(f)
+        with open(self.cookie_path, 'r', encoding='utf-8') as f:
+            data = json.loads(f.read())
         self.driver.delete_all_cookies()
         for cookie in data:
             self.driver.add_cookie({
@@ -146,28 +146,67 @@ class LearnBot2:
         print('未找到内容列表！')
         return []
 
-    def watch_video(self, video_item: VideoElement):
-        print(f'开始观看：{video_item.title}')
-        video_item.click()
-        for window in self.driver.window_handles:
-            self.driver.switch_to.window(window)
-            if 'video' in self.driver.current_url:
-                break
-        time.sleep(5)
-        self.driver.execute_script("arguments[0].setAttribute('class','xt_video_player_common_active')",
-                                   self.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[1]'))
-        self.driver.execute_script("arguments[0].setAttribute('class','')",
-                                   self.find_element_by_xpath(
-                                       '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[4]'))
+    # def watch_video(self, video_item: VideoElement):
+    #     print(f'开始观看：{video_item.title}')
+    #     video_item.click()
+    #     for window in self.driver.window_handles:
+    #         self.driver.switch_to.window(window)
+    #         if 'video' in self.driver.current_url:
+    #             break
+    #     time.sleep(5)
+    #     self.driver.execute_script("arguments[0].setAttribute('class','xt_video_player_common_active')",
+    #                                self.find_element_by_xpath(
+    #                                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[1]'))
+    #     self.driver.execute_script("arguments[0].setAttribute('class','')",
+    #                                self.find_element_by_xpath(
+    #                                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[4]'))
+    #
+    #     video_element = self.driver.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/video')
+    #     while video_element.get_attribute('duration') != video_element.get_attribute('currentTime'):
+    #         time.sleep(1)
+    #     print('finish')
+    #     self.driver.close()
 
-        video_element = self.driver.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/video')
-        while video_element.get_attribute('duration') != video_element.get_attribute('currentTime'):
+    def open_video_win(self, video_item: VideoElement):
+        print(f'开始观看：{video_item.title}')
+        last_open_windows = self.driver.window_handles
+        video_item.click()
+        self.watch_list[self.get_new_open_window(last_open_windows)] = video_item.title
+
+    def check_finish(self, window):
+        try:
+            self.driver.switch_to.window(window)
+            if self.find_element_by_xpath(
+                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton/xt-tip').get_attribute(
+                'innerText') != '暂停':
+                self.driver.execute_script('arguments[0].click()', self.find_element_by_xpath(
+                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton'))
+            if '100' in self.find_element_by_xpath(
+                    '//*[@id="app"]/div[2]/div[2]/div[3]/div/div[2]/div/div/section[1]/div[2]/div/div/span',
+                    wait_time=3).text:
+                del self.watch_list[window]
+                self.driver.close()
+                return True
+            else:
+                return False
+        except:
+            return False
+
+    def wait_watch(self):
+        for window, title in self.watch_list.items():
+            if self.check_finish(window):
+                print(f'{title} finish')
+                return
             time.sleep(1)
-        print('finish')
-        self.driver.close()
+
+    def get_new_open_window(self, last_windows):
+        for item in self.driver.window_handles:
+            if item not in last_windows:
+                return item
 
     def run(self):
         if not self.login_by_cookie():
+            self.driver.delete_all_cookies()
             self.login()
             self.wait_for_login()
         self.find_element_by_xpath('//*[@id="left_menu_ul"]/li[3]/a').click()
@@ -176,9 +215,12 @@ class LearnBot2:
         self.save_cookie()
         video_list = self.switch_video_list()
         list_window_handle = self.driver.current_window_handle
-        for item in video_list:
-            self.driver.switch_to.window(list_window_handle)
-            self.watch_video(item)
+        while video_list:
+            while len(self.watch_list) < 5 and video_list:
+                item = video_list.pop(0)
+                self.driver.switch_to.window(list_window_handle)
+                self.open_video_win(item)
+            self.wait_watch()
 
 
 if __name__ == '__main__':

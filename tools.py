@@ -11,28 +11,17 @@ from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 DOWNLOADS_FOLDER = Path.cwd() / 'drivers'
-REVISION = '588429'
-BASE_URL = 'https://storage.googleapis.com/chromium-browser-snapshots'
-windowsArchive = 'chrome-win32'
 
 
 def download_zip(url: str) -> BytesIO:
     """Download data from url."""
     logger.warning('Starting download. ' 'Download may take a few minutes.')
-
-    # Uncomment the statement below to disable HTTPS warnings and allow
-    # download without certificate verification. This is *strongly* as it
-    # opens the code to man-in-the-middle (and other) vulnerabilities; see
-    # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
-    # for more.
-    # urllib3.disable_warnings()
-
     with urllib3.PoolManager() as http:
         # Get data from url.
         # set preload_content=False means using stream later.
         r = http.request('GET', url, preload_content=False)
         if r.status >= 400:
-            raise OSError(f'Chromium downloadable not found at {url}: ' f'Received {r.data.decode()}.\n')
+            raise OSError(f'downloadable not found at {url}: ' f'Received {r.data.decode()}.\n')
 
         # 10 * 1024
         _data = BytesIO()
@@ -45,7 +34,6 @@ def download_zip(url: str) -> BytesIO:
             _data.write(chunk)
             process_bar.update(len(chunk))
         process_bar.close()
-
     logger.warning('download done.')
     return _data
 
@@ -66,11 +54,10 @@ def current_platform() -> str:
 def extract_zip(data: BytesIO, path: Path) -> None:
     """Extract zipped data to path."""
     # On mac zipfile module cannot extract correctly, so use unzip instead.
+    zip_path = path / 'temp.zip'
     if current_platform() == 'mac':
         import subprocess
         import shutil
-
-        zip_path = path / 'temp.zip'
         if not path.exists():
             path.mkdir(parents=True)
         with zip_path.open('wb') as f:
@@ -88,56 +75,20 @@ def extract_zip(data: BytesIO, path: Path) -> None:
                 zip_path.unlink()
     else:
         with ZipFile(data) as zf:
-            zf.extractall(str(path))
-    logger.warning(f'extracted to: {path}')
+            zf.extractall(str(zip_path))
+    logger.warning(f'extracted to: {zip_path}')
 
 
-# def get_chromium_url():
-#     url_map = {
-#         'win32': f'{BASE_URL}/Win/{REVISION}/{windowsArchive}.zip',
-#         'win64': f'{BASE_URL}/Win_x64/{REVISION}/{windowsArchive}.zip',
-#         'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip'
-#     }
-#     return url_map[current_platform()]
-
-
-# def get_webdriver_url():
-#     url_map = {
-#         'win32': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_win32.zip',
-#         'win64': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_win32.zip',
-#         'mac': 'https://chromedriver.storage.googleapis.com/2.46/chromedriver_mac64.zip'
-#     }
-#     return url_map[current_platform()]
-
-
-# def chromium_executable() -> Path:
-#     chromium_executable_map = {
-#         'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
-#         'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
-#         'mac': DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'
-#     }
-#     """Get path of the chromium executable."""
-#     return chromium_executable_map[current_platform()]
-
-
-def webdriver_executable() -> Path:
+def webdriver_executable(version) -> Path:
     exe_name = 'chromedriver'
+    version_path = version.replace('.', '')
     webdriver_executable_map = {
-        'mac': DOWNLOADS_FOLDER / REVISION / exe_name,
-        'win32': DOWNLOADS_FOLDER / REVISION / (exe_name + '.exe'),
-        'win64': DOWNLOADS_FOLDER / REVISION / (exe_name + '.exe'),
+        'mac': DOWNLOADS_FOLDER / version_path / exe_name,
+        'win32': DOWNLOADS_FOLDER / version_path / (exe_name + '.exe'),
+        'win64': DOWNLOADS_FOLDER / version_path / (exe_name + '.exe'),
     }
     """Get path of the chromium executable."""
     return webdriver_executable_map[current_platform()]
-
-
-# def install_browser() -> None:
-#     """Download chromium if not install."""
-#     if not chromium_executable().exists():
-#         extract_zip(download_zip(get_chromium_url()), DOWNLOADS_FOLDER / REVISION)
-#
-#     else:
-#         logging.getLogger(__name__).warning('chromium is already installed.')
 
 
 def find_version(version='95.0.4638.54'):
@@ -149,6 +100,7 @@ def find_version(version='95.0.4638.54'):
     base_url = 'http://npm.taobao.org'
     res = requests.get(base_url + '/mirrors/chromedriver/').text
     version_list = re.findall(r'<a href="(.*?)">(.*?)/</a> ', res)
+    version_list = version_list[::-1]
     version_len = len(version)
     for i in range(version_len):
         for item_url, item_version in version_list:
@@ -159,11 +111,12 @@ def find_version(version='95.0.4638.54'):
                 return match_url, match_version
 
 
-def install_webdriver(version='95.0.4638.54') -> None:
+def install_webdriver(version) -> None:
     """Download chromdriver if not install."""
+    version_path = version.replace('.', '')
     match_url, match_version = find_version(version)
-    if not webdriver_executable().exists():
-        extract_zip(download_zip(match_url), DOWNLOADS_FOLDER / REVISION)
+    if not webdriver_executable(version_path).exists():
+        extract_zip(download_zip(match_url), DOWNLOADS_FOLDER / version_path)
 
     else:
         logging.getLogger(__name__).warning('webdriver is already installed.')
