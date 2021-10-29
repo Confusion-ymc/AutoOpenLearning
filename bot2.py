@@ -41,7 +41,7 @@ class LearnBot2:
         self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": js
         })
-        self.count = 0
+        self.finish_count = 0
 
     def find_element_by_xpath(self, xpath, wait_time=60):
         for i in range(wait_time):
@@ -186,6 +186,7 @@ class LearnBot2:
                     wait_time=3).text:
                 del self.watch_list[window]
                 self.driver.close()
+                self.finish_count += 1
                 return True
             else:
                 return False
@@ -195,9 +196,9 @@ class LearnBot2:
     def wait_watch(self):
         for window, title in self.watch_list.items():
             if self.check_finish(window):
-                print(f'{title} finish')
+                print(f'{self.finish_count} {title} finish')
                 return
-            time.sleep(1)
+            time.sleep(5)
 
     def get_new_open_window(self, last_windows):
         for item in self.driver.window_handles:
@@ -216,7 +217,7 @@ class LearnBot2:
         video_list = self.switch_video_list()
         list_window_handle = self.driver.current_window_handle
         while video_list:
-            while len(self.watch_list) < 5 and video_list:
+            while len(self.watch_list) < 10 and video_list:
                 item = video_list.pop(0)
                 self.driver.switch_to.window(list_window_handle)
                 self.open_video_win(item)

@@ -75,7 +75,7 @@ def extract_zip(data: BytesIO, path: Path) -> None:
                 zip_path.unlink()
     else:
         with ZipFile(data) as zf:
-            zf.extractall(str(zip_path))
+            zf.extractall(str(path))
     logger.warning(f'extracted to: {zip_path}')
 
 

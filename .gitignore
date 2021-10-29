@@ -6,7 +6,7 @@ __pycache__/
 /drivers
 # C extensions
 *.so
-
+cookie.json
 # Distribution / packaging
 .Python
 build/
