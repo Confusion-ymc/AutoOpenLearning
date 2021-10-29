@@ -74,7 +74,6 @@ class LearnBot2:
             return
         with open(self.cookie_path, 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
-        self.driver.delete_all_cookies()
         for cookie in data:
             self.driver.add_cookie({
                 'domain': cookie['domain'],
@@ -88,6 +87,7 @@ class LearnBot2:
 
     def login_by_cookie(self):
         self.driver.get('https://student.uestcedu.com/console')
+        self.driver.delete_all_cookies()
         self.load_cookie()
         self.driver.get('https://student.uestcedu.com/console')
         return self.wait_for_login(10)
@@ -178,10 +178,10 @@ class LearnBot2:
                 self.finish_count += 1
                 return True
             video_element = self.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/video', wait_time=5)
-            last_duration = video_element.get_attribute('duration')
+            last_duration = video_element.get_attribute('currentTime')
             for i in range(3):
                 time.sleep(5)
-                if video_element.get_attribute('duration') != last_duration:
+                if video_element.get_attribute('currentTime') != last_duration:
                     break
             else:
                 raise CantFindElement()
