@@ -11,6 +11,10 @@ install_webdriver(chrome_version)
 download_stealth_js()
 
 
+class CantFindElement(Exception):
+    pass
+
+
 class VideoElement:
     def __init__(self, element):
         self.title = element.find_element_by_xpath('.//span').text
@@ -50,7 +54,7 @@ class LearnBot2:
             except:
                 time.sleep(1)
         else:
-            raise Exception(f'没有找到元素 {xpath}')
+            raise CantFindElement(f'没有找到元素 {xpath}')
 
     def find_elements_by_css_selector(self, css_selector):
         for i in range(60):
@@ -59,7 +63,7 @@ class LearnBot2:
             except:
                 time.sleep(1)
         else:
-            raise Exception(f'没有找到元素 {css_selector}')
+            raise CantFindElement(f'没有找到元素 {css_selector}')
 
     def save_cookie(self):
         with open(self.cookie_path, 'w', encoding='utf-8') as f:
@@ -146,59 +150,46 @@ class LearnBot2:
         print('未找到内容列表！')
         return []
 
-    # def watch_video(self, video_item: VideoElement):
-    #     print(f'开始观看：{video_item.title}')
-    #     video_item.click()
-    #     for window in self.driver.window_handles:
-    #         self.driver.switch_to.window(window)
-    #         if 'video' in self.driver.current_url:
-    #             break
-    #     time.sleep(5)
-    #     self.driver.execute_script("arguments[0].setAttribute('class','xt_video_player_common_active')",
-    #                                self.find_element_by_xpath(
-    #                                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[1]'))
-    #     self.driver.execute_script("arguments[0].setAttribute('class','')",
-    #                                self.find_element_by_xpath(
-    #                                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[4]'))
-    #
-    #     video_element = self.driver.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/video')
-    #     while video_element.get_attribute('duration') != video_element.get_attribute('currentTime'):
-    #         time.sleep(1)
-    #     print('finish')
-    #     self.driver.close()
-
     def open_video_win(self, video_item: VideoElement):
         print(f'开始观看：{video_item.title}')
         last_open_windows = self.driver.window_handles
         video_item.click()
-        self.watch_list[self.get_new_open_window(last_open_windows)] = video_item.title
+        self.watch_list[self.get_new_open_window(last_open_windows)] = {'title': video_item.title, 'not_load': 0}
 
     def check_finish(self, window):
         try:
             self.driver.switch_to.window(window)
             if self.find_element_by_xpath(
-                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton/xt-tip').get_attribute(
+                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton/xt-tip',
+                    wait_time=5).get_attribute(
                 'innerText') != '暂停':
                 self.driver.execute_script('arguments[0].click()', self.find_element_by_xpath(
                     '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton'))
             if '100' in self.find_element_by_xpath(
                     '//*[@id="app"]/div[2]/div[2]/div[3]/div/div[2]/div/div/section[1]/div[2]/div/div/span',
-                    wait_time=3).text:
+                    wait_time=5).text:
                 del self.watch_list[window]
                 self.driver.close()
                 self.finish_count += 1
                 return True
             else:
                 return False
+        except CantFindElement:
+            self.watch_list[window]['not_load'] += 1
+            return False
         except:
             return False
 
     def wait_watch(self):
-        for window, title in self.watch_list.items():
+        for window, item in self.watch_list.items():
             if self.check_finish(window):
-                print(f'{self.finish_count} {title} finish')
+                print(f'{self.finish_count} {item["title"]} finish')
                 return
-            time.sleep(5)
+            else:
+                if self.watch_list[window]['not_load'] >= 3:
+                    self.watch_list[window]['not_load'] = 0
+                    self.driver.refresh()
+            time.sleep(1)
 
     def get_new_open_window(self, last_windows):
         for item in self.driver.window_handles:
