@@ -165,6 +165,11 @@ class LearnBot2:
                     wait_time=5).get_attribute('innerText') != '暂停':
                 self.driver.execute_script('arguments[0].click()', self.find_element_by_xpath(
                     '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton'))
+                time.sleep(2)
+                if self.find_element_by_xpath(
+                        '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton/xt-tip',
+                        wait_time=5).get_attribute('innerText') != '暂停':
+                    raise CantFindElement()
             if '100' in self.find_element_by_xpath(
                     '//*[@id="app"]/div[2]/div[2]/div[3]/div/div[2]/div/div/section[1]/div[2]/div/div/span',
                     wait_time=5).text:
@@ -172,8 +177,15 @@ class LearnBot2:
                 self.driver.close()
                 self.finish_count += 1
                 return True
+            video_element = self.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/video', wait_time=5)
+            last_duration = video_element.get_attribute('duration')
+            for i in range(5):
+                time.sleep(2)
+                if video_element.get_attribute('duration') != last_duration:
+                    break
             else:
-                return False
+                raise CantFindElement()
+            return False
         except CantFindElement:
             self.watch_list[window]['not_load'] += 1
             print(self.watch_list[window]['title'], '加载失败')
