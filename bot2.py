@@ -179,8 +179,8 @@ class LearnBot2:
                 return True
             video_element = self.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/video', wait_time=5)
             last_duration = video_element.get_attribute('duration')
-            for i in range(5):
-                time.sleep(2)
+            for i in range(3):
+                time.sleep(5)
                 if video_element.get_attribute('duration') != last_duration:
                     break
             else:
