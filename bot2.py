@@ -159,10 +159,10 @@ class LearnBot2:
     def check_finish(self, window):
         try:
             self.driver.switch_to.window(window)
+            time.sleep(2)
             if self.find_element_by_xpath(
                     '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton/xt-tip',
-                    wait_time=5).get_attribute(
-                'innerText') != '暂停':
+                    wait_time=5).get_attribute('innerText') != '暂停':
                 self.driver.execute_script('arguments[0].click()', self.find_element_by_xpath(
                     '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton'))
             if '100' in self.find_element_by_xpath(
@@ -176,6 +176,7 @@ class LearnBot2:
                 return False
         except CantFindElement:
             self.watch_list[window]['not_load'] += 1
+            print(self.watch_list[window]['title'], '加载失败')
             return False
         except:
             return False
@@ -189,6 +190,7 @@ class LearnBot2:
                 if self.watch_list[window]['not_load'] >= 3:
                     self.watch_list[window]['not_load'] = 0
                     self.driver.refresh()
+                    print(self.watch_list[window]['title'], ' 刷新')
             time.sleep(1)
 
     def get_new_open_window(self, last_windows):
