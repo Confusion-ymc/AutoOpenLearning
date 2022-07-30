@@ -1,5 +1,5 @@
 import logging
-import re
+import os
 import sys
 from io import BytesIO
 from pathlib import Path
@@ -7,10 +7,39 @@ from zipfile import ZipFile
 
 import requests
 import urllib3
+from requests import Timeout
 from tqdm import tqdm
 
+try:
+    import winreg  # 和注册表交互
+except:
+    pass
+
 logger = logging.getLogger(__name__)
-DOWNLOADS_FOLDER = Path.cwd() / 'drivers'
+
+
+# chrome_version 文件设置浏览器配置
+
+
+def get_chrome_version():
+    try:
+        # 从注册表中获得版本号
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
+
+        _v, data_type = winreg.QueryValueEx(key, 'version')
+
+        print('Current Chrome Version: {}'.format(_v))  # 这步打印会在命令行窗口显示
+
+        return _v  # 返回前3位版本号
+
+    except Exception as e:
+        print('check Chrome failed:{}  load from version file'.format(e))
+        version_path = Path('chrome_version')
+        if not version_path.is_file():
+            return None
+        with open(version_path, 'r') as f:
+            data = f.read()
+            return data or None
 
 
 def download_zip(url: str) -> BytesIO:
@@ -76,50 +105,61 @@ def extract_zip(data: BytesIO, path: Path) -> None:
     else:
         with ZipFile(data) as zf:
             zf.extractall(str(path))
-    logger.warning(f'extracted to: {zip_path}')
+    logger.warning(f'extracted to: {path}')
 
 
-def webdriver_executable(version) -> Path:
+def webdriver_executable(chrome_version, download_folder=Path('drivers')) -> Path:
     exe_name = 'chromedriver'
-    version_path = version.replace('.', '')
+    version_path = chrome_version.replace('.', '')
     webdriver_executable_map = {
-        'mac': DOWNLOADS_FOLDER / version_path / exe_name,
-        'win32': DOWNLOADS_FOLDER / version_path / (exe_name + '.exe'),
-        'win64': DOWNLOADS_FOLDER / version_path / (exe_name + '.exe'),
+        'mac': download_folder / version_path / exe_name,
+        'win32': download_folder / version_path / (exe_name + '.exe'),
+        'win64': download_folder / version_path / (exe_name + '.exe'),
     }
     """Get path of the chromium executable."""
     return webdriver_executable_map[current_platform()]
 
 
-def find_version(version='95.0.4638.54'):
+def find_version(version):
     url_map = {
         'win32': f'chromedriver_win32.zip',
         'win64': f'chromedriver_win32.zip',
         'mac': f'chromedriver_mac64.zip'
     }
-    base_url = 'http://npm.taobao.org'
-    res = requests.get(base_url + '/mirrors/chromedriver/').text
-    version_list = re.findall(r'<a href="(.*?)">(.*?)/</a> ', res)
+    # base_url = 'http://npm.taobao.org'
+    # url = base_url + '/mirrors/chromedriver/'
+    base_url = 'https://registry.npmmirror.com/-/binary/chromedriver/'
+    try:
+        res = requests.get(base_url, timeout=30)
+    except Timeout:
+        raise Exception('获取webdriver版本超时')
+    res_text = res.text
+    res_json = res.json()
+    if res.status_code != 200:
+        raise Exception(f'url: {base_url}, res: {res_text}')
+    # version_list = re.findall(r'<a href="(.*?)">(.*?)/</a> ', res_text)
+    version_list = [i['name'] for i in res_json]
     version_list = version_list[::-1]
     version_len = len(version)
     for i in range(version_len):
-        for item_url, item_version in version_list:
+        for item_version in version_list:
             if version[0:version_len - i] in item_version:
                 match_version = item_version
-                match_url = base_url + item_url + url_map[current_platform()]
-                print(match_url, match_version)
+                match_url = base_url + item_version + url_map[current_platform()]
+                # print(match_url, match_version)
                 return match_url, match_version
+    raise Exception('not find available version')
 
 
-def install_webdriver(version) -> None:
+def install_webdriver(chrome_version, download_folder=Path('drivers')) -> None:
     """Download chromdriver if not install."""
-    version_path = version.replace('.', '')
-    match_url, match_version = find_version(version)
-    if not webdriver_executable(version_path).exists():
-        extract_zip(download_zip(match_url), DOWNLOADS_FOLDER / version_path)
-
+    version_path = chrome_version.replace('.', '')
+    match_url, match_version = find_version(chrome_version)
+    if not webdriver_executable(download_folder, chrome_version).exists():
+        extract_zip(download_zip(match_url), download_folder / version_path)
     else:
-        logging.getLogger(__name__).warning('webdriver is already installed.')
+        pass
+        # logging.getLogger(__name__).warning('webdriver is already installed.')
 
 
 def download_stealth_js():
@@ -130,3 +170,12 @@ def download_stealth_js():
             f.write(data.read())
     else:
         logging.getLogger(__name__).warning('stealth.min.js is already installed.')
+
+
+def get_driver(chrome_version):
+    download_folder = Path(os.getcwd() + '/drivers')
+    install_webdriver(download_folder, chrome_version)
+    return str(webdriver_executable(download_folder, chrome_version))
+    # driver = webdriver.Chrome(service=Service(str(webdriver_executable(download_folder))))
+    # driver.implicitly_wait(30)  # 隐性等待时间为30秒
+    # return driver

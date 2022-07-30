@@ -4,11 +4,11 @@ import time
 import traceback
 
 from selenium import webdriver
-from tools import install_browser, install_webdriver, webdriver_executable, chromium_executable
+from driver_helper import install_webdriver, webdriver_executable, get_chrome_version
 
-install_browser()
-install_webdriver()
-os.popen(str(chromium_executable()) + ' --remote-debugging-port=9222')
+chrome_version = get_chrome_version()
+install_webdriver(chrome_version)
+chromium_executable_path = webdriver_executable(chrome_version)
 
 
 class LearnBot:
@@ -16,8 +16,9 @@ class LearnBot:
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument('log-level=3')
         chrome_options.add_argument("--disable-popup-blocking")
-        chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-        self.driver = webdriver.Chrome(executable_path=str(webdriver_executable()), options=chrome_options)
+        # os.popen(str(chromium_executable_path) + ' --remote-debugging-port=9222')
+        # chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        self.driver = webdriver.Chrome(executable_path=str(chromium_executable_path), options=chrome_options)
 
         self.count = 0
         self.driver.get('https://student.uestcedu.com/console/')

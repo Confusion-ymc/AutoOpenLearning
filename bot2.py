@@ -3,11 +3,12 @@ import time
 from pathlib import Path
 
 from selenium import webdriver
-from tools import install_webdriver, webdriver_executable, download_stealth_js
+from driver_helper import install_webdriver, webdriver_executable, download_stealth_js, get_chrome_version
 
-chrome_version = '95.0.4638.69'
+chrome_version = get_chrome_version()
+download_path = Path('drivers')
 
-install_webdriver(chrome_version)
+install_webdriver(download_path, chrome_version)
 download_stealth_js()
 
 
