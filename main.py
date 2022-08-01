@@ -1,28 +1,32 @@
 import datetime
-import os
+import logging
 import time
 import traceback
 
 from selenium import webdriver
-from driver_helper import install_webdriver, webdriver_executable, get_chrome_version
+from driver_helper import DriverHelper
+logging.getLogger().setLevel(logging.INFO)
 
-chrome_version = get_chrome_version()
-install_webdriver(chrome_version)
-chromium_executable_path = webdriver_executable(chrome_version)
+driver_helper = DriverHelper()
+driver_helper.install_webdriver()  # 安装driver
+chrome_executable_path = driver_helper.webdriver_executable_path()
 
 
 class LearnBot:
-    def __init__(self):
+    def __init__(self, remote_port=None):
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument('log-level=3')
         chrome_options.add_argument("--disable-popup-blocking")
-        # os.popen(str(chromium_executable_path) + ' --remote-debugging-port=9222')
-        # chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-        self.driver = webdriver.Chrome(executable_path=str(chromium_executable_path), options=chrome_options)
-
+        if remote_port:
+            logging.info(f'please start chrome with  --remote-debugging-port={remote_port}')
+            # f' --remote-debugging-port={remote_port}')
+            chrome_options.add_experimental_option("debuggerAddress", f"127.0.0.1:{remote_port}")
+            logging.info(f'wait chrome start...')
+        self.driver = webdriver.Chrome(executable_path=str(chrome_executable_path), options=chrome_options)
+        logging.info(f'connect success')
         self.count = 0
         self.driver.get('https://student.uestcedu.com/console/')
-    
+
     def find_element_by_xpath(self, xpath):
         for i in range(60):
             try:
