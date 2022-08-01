@@ -1,5 +1,6 @@
 import logging
 import sys
+import time
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
@@ -97,7 +98,7 @@ class DriverHelper:
                 zf.extractall(str(path))
         logger.warning(f'extracted to: {path}')
 
-    def webdriver_executable_path(self) -> Path:
+    def get_webdriver_executable_path(self) -> Path:
         exe_name = 'chromedriver'
         version_path = self.chrome_version.replace('.', '')
         webdriver_executable_map = {
@@ -142,7 +143,7 @@ class DriverHelper:
         """Download chromdriver if not install."""
         version_path = (version_path or self.chrome_version).replace('.', '')
         match_url, match_version = self.find_version()
-        if not self.webdriver_executable_path().exists():
+        if not self.get_webdriver_executable_path().exists():
             self.extract_zip(self.download_zip(match_url), self.download_folder_path / version_path)
         else:
             pass
@@ -155,10 +156,21 @@ class DriverHelper:
             data = self.download_zip(url)
             with open(js_path, 'wb') as f:
                 f.write(data.read())
-            return js_path
+                return js_path
         else:
             logging.getLogger(__name__).warning('stealth.min.js is already installed.')
 
     def get_driver(self):
         self.install_webdriver()
-        return str(self.webdriver_executable_path())
+        return str(self.get_webdriver_executable_path())
+
+
+if __name__ == '__main__':
+    from selenium.webdriver.chrome.service import Service
+    from selenium import webdriver
+
+    driver_helper = DriverHelper()
+    execute_path = driver_helper.get_driver()
+    driver = webdriver.Chrome(service=Service(executable_path=execute_path))
+    driver.get('https://www.baidu.com')
+    time.sleep(10)
