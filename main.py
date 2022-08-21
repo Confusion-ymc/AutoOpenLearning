@@ -3,7 +3,7 @@ import logging
 import time
 import traceback
 
-
+print("test")
 from selenium import webdriver
 from driver_helper import DriverHelper
 logging.getLogger().setLevel(logging.INFO)
